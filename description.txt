@@ -3,7 +3,7 @@ battleship-console
 
 Example console battleship game project to experiment with STRUCT and typedef in C. Uses pdcurses, tested with gcc 4.8.1
 
-
+ 
 So here's a kind of psuedo code description of the application... 
 
 It didnt quite end up like this.. but this shows how the process of making it started and unfolded.
