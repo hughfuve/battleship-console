@@ -1,0 +1,2 @@
+
+g++ main.cpp -lpdcurses -o../bin/battleshipx86.exe 
