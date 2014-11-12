@@ -15,8 +15,8 @@ So here's a kind of psuedo code description of the application...
 It didnt quite end up like this.. but this shows how the process of making it started and unfolded.
 
 The app development starts with a text description, where we try to identify the nouns and verbs and adjectives for
-properties, methods and objects. Indents are used to try and show hierarchy and dependency.
-	  
+properties, methods and objects. Indents are used677 to try and show hierarchy and dependency.
+};	  
 APPLICATION DESCRIPTION
 (why the hell does it wrap this block of text and not the other parts of the doc???? stupid friggn thing)
 The GAMEWORLD is {composed} of 
@@ -43,8 +43,8 @@ The GAMEWORLD is {composed} of
 					enum TILE  { NOTHING=0,CARRIER, BATTLESHIP, CRUISER, SUBMARINE, DESTROYER, WATER,
 								CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_HIT,
 								WATER_MISS
-							};				
-			
+							};		
+
 				These TILES are used to show the HISTORY OF ATTACKS
 					COORDINATES are represented as [x_row, y_column] or [x,y]
 					Where 
