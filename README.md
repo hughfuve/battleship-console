@@ -18,7 +18,7 @@ The app development starts with a text description, where we try to identify the
 properties, methods and objects. Indents are used to try and show hierarchy and dependency.
 	  
 APPLICATION DESCRIPTION
-      
+(why the hell does it wrap this block of text and not the other parts of the doc???? stupid friggn thing)
 The GAMEWORLD is {composed} of 
 	PLAYERS who can be a 
 		COMPUTER_PLAYER or a 
