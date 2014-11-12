@@ -17,43 +17,43 @@ It didnt quite end up like this.. but this shows how the process of making it st
 The app development starts with a text description, where we try to identify the nouns and verbs and adjectives for
 properties, methods and objects. Indents are used to try and show hierarchy and dependency.
 	  
-APPLICATION DESCRIPTION   677611
+APPLICATION DESCRIPTION
       
- The GAMEWORLD is {composed} of 
- PLAYERS who can be a 
-  COMPUTER_PLAYER or a 
-  HUMAN_PLAYER
-  The HUMAN_PLAYER {views} a PLAYER_VIEW that {shows}  
-    a 10x10ENEMY_GAMESPACE 
-		the ENEMY_GAMESPACE {shows} 
-			the current HISTORY_OF_ATTACKS by the PLAYER into ENEMY_GAMESPACE	
-			History is represented as a variable number of HITS and MISSES to VECTORS within the game_space.
-				History is probably best recorded as a 10x10 array of vectors, if we wanted a chronological recording of the attacks, but we probably dont need that here, so we can just record status within a 10x10 array.	a 10x10PLAYER_GAMESPACE
-		the PLAYER_GAMESPACE {shows} 
-			the current HISTORY_OF_ATTACKS by the COMPUTER into PLAYER_GAMESPACE		
-	  these GAMESPACES are made of 
-		TILETYPES which are of types
-			WATER
-			SHIP_PIECE			(part of a ship)
-				Front Piece ?
-				Mid Piece ?
-				Rear Piece ?
-			EXPLOSION_ONSHIP
-			EXPLOSION_ONWATER
-			enum TILE  { NOTHING=0,CARRIER, BATTLESHIP, CRUISER, SUBMARINE, DESTROYER, WATER,
-				   CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_HIT,
-				    WATER_MISS
-				 };				
+The GAMEWORLD is {composed} of 
+	PLAYERS who can be a 
+		COMPUTER_PLAYER or a 
+  		HUMAN_PLAYER
+			The HUMAN_PLAYER {views} a PLAYER_VIEW that {shows}  
+				a 10x10ENEMY_GAMESPACE 
+				the ENEMY_GAMESPACE {shows} 
+					the current HISTORY_OF_ATTACKS by the PLAYER into ENEMY_GAMESPACE	
+					History is represented as a variable number of HITS and MISSES to VECTORS within the game_space.
+					History is probably best recorded as a 10x10 array of vectors, if we wanted a chronological recording of the attacks, but we probably dont need that here, so we can just record status within a 10x10 array.	a 10x10PLAYER_GAMESPACE
+				the PLAYER_GAMESPACE {shows} 
+					the current HISTORY_OF_ATTACKS by the COMPUTER into PLAYER_GAMESPACE		
+				these GAMESPACES are made of 
+					TILETYPES which are of types
+						WATER
+						SHIP_PIECE			(part of a ship)
+						Front Piece ?
+						Mid Piece ?
+						Rear Piece ?
+					EXPLOSION_ONSHIP
+					EXPLOSION_ONWATER
+					enum TILE  { NOTHING=0,CARRIER, BATTLESHIP, CRUISER, SUBMARINE, DESTROYER, WATER,
+								CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_HIT,
+								WATER_MISS
+							};				
 			
-			These TILES are used to show the HISTORY OF ATTACKS
-		COORDINATES are represented as [x_row, y_column] or [x,y]
-			Where 
-				[0,0] = top left corner.
-				[9,0] = top right corner.
-				[1,0] = 1 square to the right of top left corner.
-				[0,1] = 1 square below top left corner.
-				etc
-	The VIEW			
+				These TILES are used to show the HISTORY OF ATTACKS
+					COORDINATES are represented as [x_row, y_column] or [x,y]
+					Where 
+						[0,0] = top left corner.
+						[9,0] = top right corner.
+						[1,0] = 1 square to the right of top left corner.
+						[0,1] = 1 square below top left corner.
+						etc
+				The VIEW			
 		The most consistent ASCII codes to represent ships (across different terminals)
 	are codes in range #000-127. So by using a letter code for the ships CKSBD and X's to 
 	represent the hits and O's for misses, we will render on any machine. 
