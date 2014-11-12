@@ -1,4 +1,4 @@
-battleship-console
+battleship-console 
 ==================
 
 Example console battleship game project to experiment with STRUCT and typedef in C.
