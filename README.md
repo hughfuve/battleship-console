@@ -17,7 +17,7 @@ It didnt quite end up like this.. but this shows how the process of making it st
 The app development starts with a text description, where we try to identify the nouns and verbs and adjectives for
 properties, methods and objects. Indents are used to try and show hierarchy and dependency.
 	  
-APPLICATION DESCRIPTION   
+APPLICATION DESCRIPTION   677611
       
  The GAMEWORLD is {composed} of 
  PLAYERS who can be a 
