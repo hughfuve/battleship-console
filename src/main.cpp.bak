@@ -3,6 +3,7 @@
 #include <cstring>
 #include <curses.h>
 #include <iostream>
+//#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -13,8 +14,8 @@
 using namespace std;
 
 enum TILE  		 { NOTHING=0,CARRIER,     BATTLESHIP,     CRUISER,     SUBMARINE,     DESTROYER,     WATER,
-                             CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_MISS,
-                             WATER_HIT, TRY_AGAIN
+				             CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_MISS,
+				             WATER_HIT, TRY_AGAIN
 				 };				
 enum STATE       { IDLE=0, WAITING, STARTING, CLOSING, QUITTING, EXPLODING, HIT, MISS,DESTROYED,NORTH,SOUTH,EAST,WEST};
 enum COMMAND     { INIT=0, SERVICE, RESET, END, RESTART, FIRE, QUIT, POSITION, SHOW , MAINLOOP, TERMINATE, ADD, CHECK_TARGET};
@@ -24,127 +25,130 @@ enum COLORS		 {BLACK=0,RED,GREEN,YELLOW,BLUE,CYAN,MAGENTA,WHITE};
 enum SEEKMODE	 {SEARCH=0,DESTROY};
 
 typedef struct {
-    STATE       state;
-    TILE        tileType;   
-    ORIENTATION orientation;  
-    int         length;					//size of the ship 2,3,4,5 tiles.
-    TILE        tiles[6];
-    int         xpos;
-    int         ypos;
-    int         hits;
+  STATE 		state;
+  TILE	 		tileType;   
+  ORIENTATION 	orientation;  
+  int 			length;					//size of the ship 2,3,4,5 tiles.
+  TILE 			tiles[6];
+  int  			xpos;
+  int 			ypos;
+  int 			hits;
 } SHIP;
 
 typedef struct {
-    STATE       state;
-    TILE        targetType;
-    int         targetVectorX;
-    int         targetVectorY;	
-    bool        directionKnown; 
-    int         hits;
-    bool        changeDirection;
+	STATE	state;
+	TILE 	targetType;
+	int 	targetVectorX;
+	int 	targetVectorY;	
+	bool 	directionKnown; 
+	int 	hits;
+	bool	changeDirection;
 } TARGET;
 
 
 typedef struct {
-    STATE       state; 
-    SHIP        ships[6];					//not a pointer to a SHIP struct but the allocated space
-    TARGET      targets[6];
-    TILE        playerGameSpace[10][10]; 
-    TILE        enemyGameSpace[10][10];  	//history of what the player knows about enemy	
-    char        attackVectorX;				//currently aimed at attack vector X
-    char        attackVectorY;	
-    int         lost;
-} PLAYER;
+	STATE 		state; 
+	SHIP 		ships[6];					//not a pointer to a SHIP struct but the allocated space
+	TARGET		targets[6];
+	TILE		playerGameSpace[10][10]; 
+	TILE		enemyGameSpace[10][10];  	//history of what the player knows about enemy	
+	char 		attackVectorX;				//currently aimed at attack vector X
+	char 		attackVectorY;	
+	int			lost;
+	} PLAYER;
 
 typedef struct {
-    STATE       state; 
-    DIFF        difficulty;
-    int         round;		
-    char        key;	
+	STATE 		state; 
+	DIFF		difficulty;
+	int			round;		
+	char		key;	
 } WORLD;
 
 
 /* PROTOTYPES */	
 
-bool            worldHandler(COMMAND cmd, WORLD *world);
-int             playerHandler(COMMAND cmd, PLAYER *player);
-void            cursesHandler(COMMAND cmd);
-int             messageHandler(COMMAND cmd, string message);
+bool 			worldHandler(COMMAND cmd, WORLD *world);
+int				playerHandler(COMMAND cmd, PLAYER *player);
+void			cursesHandler(COMMAND cmd);
+int 			messageHandler(COMMAND cmd, string message);
 
-void            ship_INIT(SHIP * shipObj, TILE tileType);
-void            ship_SET_RANDOM_POSITION(SHIP * shipObj);
-int             ship_CHECK_SHIP_POSITION(SHIP * shipObj,TILE gameSpace[][10]);
-void            ship_PLACE_ON_MAP(SHIP * shipObj,TILE gameSpace[][10]);
-int             ship_TAKE_HIT(SHIP * shipObj);
+void 			ship_INIT(SHIP * shipObj, TILE tileType);
+void 			ship_SET_RANDOM_POSITION(SHIP * shipObj);
+int  			ship_CHECK_SHIP_POSITION(SHIP * shipObj,TILE gameSpace[][10]);
+void 			ship_PLACE_ON_MAP(SHIP * shipObj,TILE gameSpace[][10]);
+int 			ship_TAKE_HIT(SHIP * shipObj);
 
-bool            target_CHANGE_DIRECTION(TARGET * target);
-TILE            target_CHECK_TARGET(TARGET * target, PLAYER * player, TILE targetTile);
+bool 			target_CHANGE_DIRECTION(TARGET * target);
+TILE 			target_CHECK_TARGET(TARGET * target, PLAYER * player, TILE targetTile);
 
-bool            getInput(char *c);
+bool 			getInput(char *c);
 
-string          &str_replace(const string &search, const string &replace, string &subject);
+string& 		str_replace(const string &search, const string &replace, string &subject);
 vector<string>  split(const string &s, char delim);
-vector<string>  &split(const string &s, char delim, vector<string> &elems);
+vector<string> &split(const string &s, char delim, vector<string> &elems);
 
 /* DATA TABLES */
 const string viewTemplate = 
-        "  0 1 2 3 4 5 6 7 8 9  [TAB][ENTER][LEFT][RIGHT][UP][DOWN]  \n"
-        "A A0A1A2A3A4A5A6A7A8A9 [-------------  STAT  -------------] \n"
-        "B B0B1B2B3B4B5B6B7B8B9  X = {0-9} : [x]   DIFFICULTY: {diff}\n"
-        "C C0C1C2C3C4C5C6C7C8C9  Y = {A-J} : [y]                     \n"
-        "D D0D1D2D3D4D5D6D7D8D9  ROUND     : rrr                     \n"
-        "E E0E1E2E3E4E5E6E7E8E9 \n"
-        "F F0F1F2F3F4F5F6F7F8F9 [------------ MESSAGES ------------] \n"
-        "G G0G1G2G3G4G5G6G7G8G9 [{row 0}]\n"
-        "H H0H1H2H3H4H5H6H7H8H9 [{row 1}]\n"
-        "I I0I1I2I3I4I5I6I7I8I9 [{row 2}]\n"
-        "J J0J1J2J3J4J5J6J7J8J9 [{row 3}]\n"
-        "                       [{row 4}]\n"
-        "  0 1 2 3 4 5 6 7 8 9  [{row 5}]\n"
-        "A a0a1a2a3a4a5a6a7a8a9 [{row 6}]\n"
-        "B b0b1b2b3b4b5b6b7b8b9 [{row 7}]\n"
-        "C c0c1c2c3c4c5c6c7c8c9 [{row 8}]\n"
-        "D d0d1d2d3d4d5d6d7d8d9 [{row 9}]\n"
-        "E e0e1e2e3e4e5e6e7e8e9 [{row 10}]\n"
-        "F f0f1f2f3f4f5f6f7f8f9 [{row 11}]\n"
-        "G g0g1g2g3g4g5g6g7g8g9 [{row 12}]\n"
-        "H h0h1h2h3h4h5h6h7h8h9 [{row 13}]\n"
-        "I i0i1i2i3i4i5i6i7i8i9 [{row 14}]\n"
-        "J j0j1j2j3j4j5j6j7j8j9 [{row 15}]\n"
-        "[---------------------------------------------------------] \n"
-        " [Carrier] [Battleship] [K-Cruiser] [Submarine] [Destroyer] \n"
-        " \n"
-        " \n"
-        " \n"
-        " \n";
+		"  0 1 2 3 4 5 6 7 8 9  [TAB][ENTER][LEFT][RIGHT][UP][DOWN]  \n"
+		"A A0A1A2A3A4A5A6A7A8A9 [-------------  STAT  -------------] \n"
+		"B B0B1B2B3B4B5B6B7B8B9  X = {0-9} : [x]   DIFFICULTY: {diff}\n"
+		"C C0C1C2C3C4C5C6C7C8C9  Y = {A-J} : [y]                     \n"
+		"D D0D1D2D3D4D5D6D7D8D9  ROUND     : rrr                     \n"
+		"E E0E1E2E3E4E5E6E7E8E9 \n"
+		"F F0F1F2F3F4F5F6F7F8F9 [------------ MESSAGES ------------] \n"
+		"G G0G1G2G3G4G5G6G7G8G9 [{row 0}]\n"
+		"H H0H1H2H3H4H5H6H7H8H9 [{row 1}]\n"
+		"I I0I1I2I3I4I5I6I7I8I9 [{row 2}]\n"
+		"J J0J1J2J3J4J5J6J7J8J9 [{row 3}]\n"
+		"                       [{row 4}]\n"
+		"  0 1 2 3 4 5 6 7 8 9  [{row 5}]\n"
+		"A a0a1a2a3a4a5a6a7a8a9 [{row 6}]\n"
+		"B b0b1b2b3b4b5b6b7b8b9 [{row 7}]\n"
+		"C c0c1c2c3c4c5c6c7c8c9 [{row 8}]\n"
+		"D d0d1d2d3d4d5d6d7d8d9 [{row 9}]\n"
+		"E e0e1e2e3e4e5e6e7e8e9 [{row 10}]\n"
+		"F f0f1f2f3f4f5f6f7f8f9 [{row 11}]\n"
+		"G g0g1g2g3g4g5g6g7g8g9 [{row 12}]\n"
+		"H h0h1h2h3h4h5h6h7h8h9 [{row 13}]\n"
+		"I i0i1i2i3i4i5i6i7i8i9 [{row 14}]\n"
+		"J j0j1j2j3j4j5j6j7j8j9 [{row 15}]\n"
+		"[---------------------------------------------------------] \n"
+		" [Carrier] [Battleship] [K-Cruiser] [Submarine] [Destroyer] \n"
+		" \n"
+		" \n"
+		" \n"
+		" \n";
 		
-int             partLengths[]			={1,5,4,4,3,2,1,		
+int 			partLengths[]			={1,5,4,4,3,2,1,		
 											4,4,3,2,1,1,0};
 							//REF http://www.theasciicode.com.ar/extended-ascii-code/graphic-character-low-density-dotted-ascii-code-176.html
-string          tileSet[] 				= {"  ", "C ", "B ", "K ", "S ", "D ", ". ",
+string 			tileSet[] 				= {"  ", "C ", "B ", "K ", "S ", "D ", ". ",
 												 "CX", "BX", "KX", "SX", "DX", ".O", ".X"};
-string          tileTypes[]  			= {"NOTHING","CARRIER",    "BATTLESHIP",    "CRUISER",    "SUBMARINE",    "DESTROYER",    "WATER",
+string  		tileTypes[]  			= {"NOTHING","CARRIER",    "BATTLESHIP",    "CRUISER",    "SUBMARINE",    "DESTROYER",    "WATER",
            							     "CARRIER_HIT","BATTLESHIP_HIT","CRUISER_HIT","SUBMARINE_HIT","DESTROYER_HIT","WATER_MISS","WATER_HIT"};
 
 										//see enum STATE
-string          stateTypes[]			={"IDLE","WAITING","STARTING","CLOSING","QUITTING","EXPLODING","HIT","MISS","DESTROYED","NORTH","SOUTH","EAST","WEST"};
+string 			stateTypes[]			={"IDLE","WAITING","STARTING","CLOSING","QUITTING","EXPLODING","HIT","MISS","DESTROYED","NORTH","SOUTH","EAST","WEST"};
 
 										 
-const string    difficulties[]			={"EASY  ","MEDIUM","HARD  ","STUPID"};
-const char      enemyRows[]				={'A','B','C','D','E','F','G','H','I','J'};
-const char      enemyCols[]				={'0','1','2','3','4','5','6','7','8','9'};								
-const char      playerRows[]			={'a','b','c','d','e','f','g','h','i','j'};
-const char      playerCols[]			={'0','1','2','3','4','5','6','7','8','9'};
+const string	difficulties[]			={"EASY  ","MEDIUM","HARD  ","STUPID"};
+const char		enemyRows[]				={'A','B','C','D','E','F','G','H','I','J'};
+const char		enemyCols[]				={'0','1','2','3','4','5','6','7','8','9'};				
+				
+const char		playerRows[]			={'a','b','c','d','e','f','g','h','i','j'};
+const char		playerCols[]			={'0','1','2','3','4','5','6','7','8','9'};
 			
+							
+//enum TILE  		 { NOTHING=0,CARRIER,     BATTLESHIP,     CRUISER,     SUBMARINE,     DESTROYER,     WATER,
 							 
-char            attackXCoordinates[]	={'0','1','2','3','4','5','6','7','8','9'};
-char            attackYCoordinates[]	={'a','b','c','d','e','f','g','h','i','j'};
+char 			attackXCoordinates[]	={'0','1','2','3','4','5','6','7','8','9'};
+char 			attackYCoordinates[]	={'a','b','c','d','e','f','g','h','i','j'};
 							 
-PLAYER          playerObj;
-PLAYER          computerObj;
-WORLD           worldObj;
-string          viewBuffer;
-char            tmpBuffer[256];			//temp buffer for constructing display elements
+PLAYER 	playerObj;
+PLAYER 	computerObj;
+WORLD	worldObj;
+string  viewBuffer;
+char 	tmpBuffer[256];			//temp buffer for constructing display elements
 
 	
 	// *******************************************************		
@@ -758,7 +762,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 	}
 	
 	// *******************************************************
-	bool target_CHANGE_DIRECTION(TARGET * target){               //manages seek direction change for the targeting AI
+	bool target_CHANGE_DIRECTION(TARGET * target){               //manages direction changing for the targeting AI
 	// *******************************************************
 		switch(target->state){
 			case NORTH:
@@ -924,7 +928,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 	
 	// *******************************************************
 	// Read Keyboard input without stopping using old C conio.h function
-	//REF: thanks to ... http://www.cplusplus.com/forum/general/16335/
+	//REF: http://www.cplusplus.com/forum/general/16335/
 	
 	//  (not sure how compatible conio.h is) 
 	//  should probably use curses to do this instead of kbhit(). (http://www.mkssoftware.com/docs/man3/curs_getch.3.asp)
@@ -939,7 +943,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 	}
 
 	// *******************************************************	
-	//REF: thanks to ... http://invisible-island.net/ncurses/ncurses-intro.html#using
+	//REF: http://invisible-island.net/ncurses/ncurses-intro.html#using
 	//     Gives us GUI  like display capability on a terminal / console
 	void cursesHandler(COMMAND cmd){
 	// *******************************************************	
@@ -1037,7 +1041,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 
 
 	// *******************************************************	
-	//REF: thanks to ... http://stackoverflow.com/questions/236129/split-a-string-in-c
+	//REF: http://stackoverflow.com/questions/236129/split-a-string-in-c
 	vector<string> &split(const string &s, char delim, vector<string> &elems) {
 	// *******************************************************	
     stringstream ss(s);
@@ -1048,7 +1052,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 		return elems;
 	}
 	// *******************************************************	
-	//REF: thanks to ... http://stackoverflow.com/questions/236129/split-a-string-in-c
+	//REF: http://stackoverflow.com/questions/236129/split-a-string-in-c
 	vector<string> split(const string &s, char delim) {
 	// *******************************************************	
 		vector<string> elems;
@@ -1057,7 +1061,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 	}
 	
 	// *******************************************************
-	//REF: thanks to ... http://www.zedwood.com/article/cpp-str_replace-function
+	//REF: http://www.zedwood.com/article/cpp-str_replace-function
  	string& str_replace(const string &search, const string &replace, string &subject){
 	// *******************************************************
 		string buffer;
