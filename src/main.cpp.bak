@@ -358,7 +358,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
                             //nothing to do...
                             //except maybe talk smack once every (100/4) keystrokes.
                           
-                          /*
+                          
                           if(rand() % 200 == 1){
                                 messageHandler(ADD,"Comp,'OMG you are so bad at this'");
                             }
@@ -371,7 +371,7 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
                             if(rand() % 200 == 4){
                                 messageHandler(ADD,"Comp,'Are you even trying?'");
                             }                          
-                            */
+                          
             break;
             case FIRE:      //Handles the AI's decision making when taking a shot.    
                             //see description.txt for the logic behind what it does.
