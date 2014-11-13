@@ -131,21 +131,21 @@ const string viewTemplate =
         " \n"
         " \n";
         
-int             partLengths[]            ={1,5,4,4,3,2,1,        
+int             partLengths[]           ={1,5,4,4,3,2,1,        
                                             4,4,3,2,1,1,0};
                             //REF http://www.theasciicode.com.ar/extended-ascii-code/graphic-character-low-density-dotted-ascii-code-176.html
-string          tileSet[]                 = {"  ", "C ", "B ", "K ", "S ", "D ", ". ",
+string          tileSet[]               = {"  ", "C ", "B ", "K ", "S ", "D ", ". ",
                                                  "CX", "BX", "KX", "SX", "DX", ".O", ".X"};
-string          tileTypes[]              = {"NOTHING","CARRIER",    "BATTLESHIP",    "CRUISER",    "SUBMARINE",    "DESTROYER",    "WATER",
+string          tileTypes[]             = {"NOTHING","CARRIER",    "BATTLESHIP",    "CRUISER",    "SUBMARINE",    "DESTROYER",    "WATER",
                                             "CARRIER_HIT","BATTLESHIP_HIT","CRUISER_HIT","SUBMARINE_HIT","DESTROYER_HIT","WATER_MISS","WATER_HIT"};
 
                                         //see enum STATE
 string          stateTypes[]            ={"IDLE","WAITING","STARTING","CLOSING","QUITTING","EXPLODING","HIT","MISS","DESTROYED","NORTH","SOUTH","EAST","WEST"};
 
                                          
-const string    difficulties[]            ={"EASY  ","MEDIUM","HARD  ","STUPID"};
-const char      enemyRows[]                ={'A','B','C','D','E','F','G','H','I','J'};
-const char      enemyCols[]                ={'0','1','2','3','4','5','6','7','8','9'};                                
+const string    difficulties[]          ={"EASY  ","MEDIUM","HARD  ","STUPID"};
+const char      enemyRows[]             ={'A','B','C','D','E','F','G','H','I','J'};
+const char      enemyCols[]             ={'0','1','2','3','4','5','6','7','8','9'};                                
 const char      playerRows[]            ={'a','b','c','d','e','f','g','h','i','j'};
 const char      playerCols[]            ={'0','1','2','3','4','5','6','7','8','9'};
             
@@ -563,14 +563,7 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
                                         if((int)result==(int) targetType){
                                             target->directionKnown=true;
                                         }
-                                        /* potential problem here...
-                                            if the the ship is targetting a carrier say
-                                               and then it hits a sub instead.. then this is technically a miss
-                                               the target algorithm needs to change direction
-                                                but it also needs to record the hit on the sub and leave that in a state to be targetted too
-                                            so we only record direction as known if we have hit a target that we were actually looking for.
-                                            otherwise for accidental hits, direction is unknown.                                            
-                                        */        
+                                        
                                 }
                                 
                                 if(ship_TAKE_HIT(&player->ships[(TILE)result])==0){
@@ -863,21 +856,21 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
             case CRUISER:
             case SUBMARINE:
             case DESTROYER:        
-                if((bool)targetTile && (int) testTile != (int) targetTile){  //we have missed our target, we should change direction
+                if((bool)targetTile && (int) testTile != (int) targetTile){             //we have missed our target, we should change direction
                     target_CHANGE_DIRECTION(target);
                 }                        
-                enemyPlayer->playerGameSpace[targetX][targetY]=(TILE) (testTile+6);  //Show the Attack on enemys board
+                enemyPlayer->playerGameSpace[targetX][targetY]=(TILE) (testTile+6);     //Show the Attack on enemys board
                 
-                player->enemyGameSpace[targetX][targetY]=(TILE) (testTile+6);        //record attack in your history        
-                return (TILE) testTile;     // 1 .. 5 = Hit A TARGET
+                player->enemyGameSpace[targetX][targetY]=(TILE) (testTile+6);           //record attack in your history        
+                return (TILE) testTile;                                                 // 1 .. 5 = Hit A TARGET
             break;
             case WATER:
-                if((bool)targetTile && (int) testTile != (int) targetTile){  //we have missed our target, we should change direction
+                if((bool)targetTile && (int) testTile != (int) targetTile){             //we have missed our target, we should change direction
                     target_CHANGE_DIRECTION(target);
                 }                        
-                enemyPlayer->playerGameSpace[targetX][targetY]=(TILE) WATER_MISS;    //show attack on enemys board
+                enemyPlayer->playerGameSpace[targetX][targetY]=(TILE) WATER_MISS;       //show attack on enemys board
                 
-                player->enemyGameSpace[targetX][targetY]=(TILE) WATER_MISS;            //record attack in your history                
+                player->enemyGameSpace[targetX][targetY]=(TILE) WATER_MISS;             //record attack in your history                
                 return (TILE) WATER;
             break;
         }
@@ -1073,11 +1066,11 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
     // *******************************************************    
         switch(cmd){
             case INIT:
-                //(void) signal(SIGNINT, finish);      /* arrange interupts to terminate */
-                (void) initscr();                    /* init the library */
-                keypad(stdscr, TRUE);                /* enable keyboard mapping */
-                (void) nonl();                         /* tell curses not to do NL-CR/NL on output */                
-                (void) cbreak();                       /* take input chars one at a time, no wait for \n */
+                //(void) signal(SIGNINT, finish);       /* arrange interupts to terminate */
+                (void) initscr();                       /* init the library */
+                keypad(stdscr, TRUE);                   /* enable keyboard mapping */
+                (void) nonl();                          /* tell curses not to do NL-CR/NL on output */                
+                (void) cbreak();                        /* take input chars one at a time, no wait for \n */
                 //(void) echo();                        /* echo the input in color */
                 if(has_colors()){
                     start_color();
