@@ -31,7 +31,7 @@ enum TILE        { NOTHING=0,CARRIER,     BATTLESHIP,     CRUISER,     SUBMARINE
 enum STATE       { IDLE=0, WAITING, STARTING, CLOSING, QUITTING, EXPLODING, HIT, MISS,DESTROYED,NORTH,SOUTH,EAST,WEST};
 enum COMMAND     { INIT=0, SERVICE, RESET, END, RESTART, FIRE, QUIT, POSITION, SHOW , MAINLOOP, TERMINATE, ADD, CHECK_TARGET};
 enum ORIENTATION { HORIZONTAL=0, VERTICAL };
-enum DIFF        { EASY=0, MEDIUM, HARD, STUPID };
+enum DIFF        { EASY=0, NORMAL, HARD, STUPID };
 enum COLORS      {BLACK=0,RED,GREEN,YELLOW,BLUE,CYAN,MAGENTA,WHITE};
 enum SEEKMODE    {SEARCH=0,DESTROY};
 
@@ -53,6 +53,8 @@ typedef struct {
     int         targetVectorY;    
     bool        directionKnown; 
     int         hits;
+    int         forceMiss;
+    int         forceHit;
     bool        changeDirection;
 } TARGET;
 
@@ -143,7 +145,7 @@ string          tileTypes[]             = {"NOTHING","CARRIER",    "BATTLESHIP",
 string          stateTypes[]            ={"IDLE","WAITING","STARTING","CLOSING","QUITTING","EXPLODING","HIT","MISS","DESTROYED","NORTH","SOUTH","EAST","WEST"};
 
                                          
-const string    difficulties[]          ={"EASY  ","MEDIUM","HARD  ","STUPID"};
+const string    difficulties[]          ={"EASY  ","NORMAL","HARD  ","STUPID"};
 const char      enemyRows[]             ={'A','B','C','D','E','F','G','H','I','J'};
 const char      enemyCols[]             ={'0','1','2','3','4','5','6','7','8','9'};                                
 const char      playerRows[]            ={'a','b','c','d','e','f','g','h','i','j'};
@@ -189,7 +191,7 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
             case INIT:    //constructor
                 world->key=' ';
                 world->state=IDLE;
-                world->difficulty=MEDIUM;
+                world->difficulty=NORMAL;
                 world->round=1;
                 
                 playerHandler(INIT, player);                //set up the player world                
@@ -386,6 +388,8 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
                                 
                                 target = &computer->targets[(int)targetType];
                                 target->changeDirection=false;                                
+                                target->forceHit=0;
+                                target->forceMiss=0;
                                 
                                 if(target->state!=IDLE){                                //NORTH,SOUTH,EAST,WEST,HIT is our targetting direction
                                     numTargets = (int) targetType;                        //records a flag of the targetType we are targetting
@@ -523,23 +527,114 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
                                 }                                
                             }
                             
-                                                 
-                            if(numTargets==0){ // there are no targets so go into search mode.
-                                result    =TRY_AGAIN;
-                                targetType=(int) NOTHING;
-                                trys=0;
-                                while(result==TRY_AGAIN ){
-                                    computer->attackVectorX = attackXCoordinates[rand() % 10];
-                                    computer->attackVectorY = attackYCoordinates[rand() % 10];                                                        
+                            
+                            
+                            if(world->difficulty==EASY){
+                                target->forceMiss=rand() % 3;     //gives the comp a 33% chance of being forced to botch his shot
+                                if(numTargets==0){ // there are no targets so go into search mode.
+                                    result    =TRY_AGAIN;
+                                    targetType=(int) NOTHING;
+                                    trys=0;
+                                
+                                
+                                
+                                    while(result==TRY_AGAIN ){
+                                        computer->attackVectorX = attackXCoordinates[rand() % 10];
+                                        computer->attackVectorY = attackYCoordinates[rand() % 10];                                                        
                                     
-                                    result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
-                                    if (trys++ > 99){
-                                        messageHandler(ADD,"ERROR Failed 100 trys to search");
-                                        return 1;
+                                        result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
+                                        if (trys++ > 99){
+                                            messageHandler(ADD,"ERROR Failed 100 trys to search");
+                                            return 1;
+                                        }
+                                        //if(target->forceMiss==1){
+                                        //    if(result!=WATER){
+                                        //        result=TRY_AGAIN;
+                                        //    }
+                                        //}
+                                        
                                     }
                                 }
                                 
                             }
+                            //5+4+4+3+2 = 18/100 = 18%  (comp has an 18% chance of hitting which increases with tries, and drops as he makes good.
+                            
+                            if(world->difficulty==HARD){
+                                target->forceHit=rand() % 10;        //gives the comp a solid 10% extra chances of making a hit every time
+                                if(numTargets==0){                  // there are no targets so go into search mode.
+                                    result    =TRY_AGAIN;
+                                    targetType=(int) NOTHING;
+                                    trys=0;                               
+                                
+                                
+                                    while(result==TRY_AGAIN ){
+                                        computer->attackVectorX = attackXCoordinates[rand() % 10];
+                                        computer->attackVectorY = attackYCoordinates[rand() % 10];                                                        
+                                    
+                                        result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
+                                        if (trys++ > 99){
+                                            messageHandler(ADD,"ERROR Failed 100 trys to search");
+                                            return 1;
+                                        }
+                                        //if(target->forceHit==1){
+                                        //    if(result==WATER){
+                                        //        result=TRY_AGAIN;
+                                        //    }
+                                        //}
+                                        
+                                    }
+                                }
+                                
+                            }
+                            if(world->difficulty==STUPID){
+                                target->forceHit=rand() % 5;     //gives the comp a solid 20% chance of making a hit every time
+                                if(numTargets==0){          // there are no targets so go into search mode.
+                                    result    =TRY_AGAIN;
+                                    targetType=(int) NOTHING;
+                                    trys=0;                               
+                                
+                                
+                                    while(result==TRY_AGAIN ){
+                                        computer->attackVectorX = attackXCoordinates[rand() % 10];
+                                        computer->attackVectorY = attackYCoordinates[rand() % 10];                                                        
+                                    
+                                        result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
+                                        if (trys++ > 99){
+                                            messageHandler(ADD,"ERROR Failed 100 trys to search");
+                                            return 1;
+                                        }
+                                        //if(target->forceHit==1){
+                                        //    if(result==WATER){
+                                        //        result=TRY_AGAIN;
+                                        //    }
+                                        //}
+                                        
+                                    }
+                                }
+                                
+                            }
+                            
+                            if(world->difficulty==NORMAL){                                                 
+                                if(numTargets==0){ // there are no targets so go into search mode.
+                                    result    =TRY_AGAIN;
+                                    targetType=(int) NOTHING;
+                                    trys=0;
+                                
+                                
+                                
+                                    while(result==TRY_AGAIN ){
+                                        computer->attackVectorX = attackXCoordinates[rand() % 10];
+                                        computer->attackVectorY = attackYCoordinates[rand() % 10];                                                        
+                                    
+                                        result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
+                                        if (trys++ > 99){
+                                            messageHandler(ADD,"ERROR Failed 100 trys to search");
+                                            return 1;
+                                        }
+                                    }
+                                }
+                            }
+                            
                             sprintf(tmpBuffer,"Computer Fires at [%c, %c]",computer->attackVectorX,computer->attackVectorY);
                             messageHandler(ADD,tmpBuffer);
                             
@@ -669,6 +764,18 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
                     case '9':
                         player->attackVectorX=world->key;
                     break;
+                    case '+':
+                        if((int)world->difficulty<3){
+                            world->difficulty = (DIFF) ((int) world->difficulty + 1);
+                        }
+                    break;
+                       
+                    case '-':
+                        if((int)world->difficulty > 0){
+                            world->difficulty = (DIFF) ((int) world->difficulty - 1);
+                        }
+                    break;
+                        
     //                case 0x0d:        //ENTER KEY
                         
     //                break;
@@ -685,6 +792,9 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
             case FIRE:
                             int targetType;
                             
+                            target=&player->targets[NOTHING];
+                            target->forceHit=0;
+                            target->forceMiss=0;
                             sprintf(tmpBuffer,"Player Shoots at [%c, %c]",player->attackVectorX,player->attackVectorY);
                             messageHandler(ADD,tmpBuffer);
                             
@@ -832,7 +942,7 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
             case BATTLESHIP_HIT:
             case CRUISER_HIT:
             case SUBMARINE_HIT:
-            case DESTROYER_HIT:        
+            case DESTROYER_HIT:                        
                 //if the target does not match, we need to change search directions
                 if((bool)targetTile && (int) targetTile+6 != (int) historyTile){
                     target_CHANGE_DIRECTION(target);
@@ -856,6 +966,9 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
             case CRUISER:
             case SUBMARINE:
             case DESTROYER:        
+                if(targetTile == NOTHING && target->forceMiss==1){
+                    return TRY_AGAIN;
+                }
                 if((bool)targetTile && (int) testTile != (int) targetTile){             //we have missed our target, we should change direction
                     target_CHANGE_DIRECTION(target);
                 }                        
@@ -865,6 +978,9 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
                 return (TILE) testTile;                                                 // 1 .. 5 = Hit A TARGET
             break;
             case WATER:
+                if(targetTile==NOTHING && target->forceHit==1){
+                    return TRY_AGAIN;
+                }
                 if((bool)targetTile && (int) testTile != (int) targetTile){             //we have missed our target, we should change direction
                     target_CHANGE_DIRECTION(target);
                 }                        
