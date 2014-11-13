@@ -105,9 +105,9 @@ vector<string>  &split(const string &s, char delim, vector<string> &elems);
 const string viewTemplate = 
         "  0 1 2 3 4 5 6 7 8 9  [TAB][ENTER][LEFT][RIGHT][UP][DOWN]  \n"
         "A A0A1A2A3A4A5A6A7A8A9 [-------------  STAT  -------------] \n"
-        "B B0B1B2B3B4B5B6B7B8B9  X = {0-9} : [x]   DIFFICULTY: {diff}\n"
-        "C C0C1C2C3C4C5C6C7C8C9  Y = {A-J} : [y]                     \n"
-        "D D0D1D2D3D4D5D6D7D8D9  ROUND     : rrr                     \n"
+        "B B0B1B2B3B4B5B6B7B8B9  X = {0-9} : [x] DIFFICULTY+/-:{diff}\n"
+        "C C0C1C2C3C4C5C6C7C8C9  Y = {A-J} : [y] ROUND        : rrr  \n"
+        "D D0D1D2D3D4D5D6D7D8D9                                      \n"
         "E E0E1E2E3E4E5E6E7E8E9 \n"
         "F F0F1F2F3F4F5F6F7F8F9 [------------ MESSAGES ------------] \n"
         "G G0G1G2G3G4G5G6G7G8G9 [{row 0}]\n"
@@ -181,6 +181,7 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
     // *******************************************************
         //enum COMMAND     { INIT, RESET, END, RESTART, FIRE, QUIT };
         int count;
+        bool static firstTime;
         PLAYER * player  = &playerObj;
         PLAYER * computer= &computerObj;
                 
@@ -189,9 +190,13 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
             break;
             
             case INIT:    //constructor
-                world->key=' ';
+             
+             world->key=' ';
                 world->state=IDLE;
-                world->difficulty=NORMAL;
+                if(firstTime!= true){
+                    firstTime=true;
+                    world->difficulty=NORMAL;
+                }
                 world->round=1;
                 
                 playerHandler(INIT, player);                //set up the player world                
@@ -1225,18 +1230,18 @@ char            tmpBuffer[256];            //temp buffer for constructing displa
                 }
                 
                 //                  [------------ MESSAGES ------------] 
-                messageHandler(ADD,"             WELCOME TO ");
-                messageHandler(ADD,"            BATTLE SHIPS ");
-                messageHandler(ADD,"     ");
-                messageHandler(ADD,"     ");
-                messageHandler(ADD,"        Hit [Enter] to Attack ");
-                messageHandler(ADD,"          Cursor to Target");
-                messageHandler(ADD,"        [TAB] to change ships ");
-                messageHandler(ADD,"     ");
-                messageHandler(ADD,"        Good Luck - Have Fun!");
-                messageHandler(ADD,"     ");
-                messageHandler(ADD,"     ");
-                messageHandler(ADD,"     ");
+                messageHandler(ADD,"            WELCOME TO ");
+                messageHandler(ADD,"           BATTLE SHIPS ");
+                messageHandler(ADD,"    ");
+                messageHandler(ADD,"    ");
+                messageHandler(ADD,"       Hit [Enter] to Attack ");
+                messageHandler(ADD,"    Use [Cursors] to Aim Target");
+                messageHandler(ADD,"       [TAB] to change ships ");
+                messageHandler(ADD,"    [+][-] to change Difficulty ");
+                messageHandler(ADD,"    ");
+                messageHandler(ADD,"       Good Luck - Have Fun!");                
+                messageHandler(ADD,"    ");
+                messageHandler(ADD,"    ");
                 
                 
                 
