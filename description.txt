@@ -88,6 +88,12 @@ APPLICATION DESCRIPTION
 		is no way to tell where one type of ship starts and another ends, so you have to go
 		for unique codes or colors for each ship type.
 		
+          [C]-Carrier
+          [B]-BattleShip
+          [K]-Cruiser
+          [S]-Submarine
+          [D]-Destroyer
+        
 		The easiest and most flexible way to manipulate your view area is to create a string 
 		template, and use {codes} to define where you will place your data, and you just use
 		str replace calls to insert your data into the template then you can use sprintf() calls
@@ -371,6 +377,16 @@ COMPUTER AI.
 			
 			After your shots, you then get to see what the damage is.
 			
-			
+		TODO for someone...
+
+         move handlers to classes
+         Remove Globals and encapsulate all data into the classes
+         add color
+            create an attribute map so the ships can be colored and solid
+            or just use the curses screen buffers to fill the role of the gameSpace[][] tables
+         animate explosions on the ships
+         keep tally .. Computer Wins / Player Wins  or Win/Loss
+         allow cross hair to roll over to the next row or column when you get to the end of the row or column
+        
 	
 
