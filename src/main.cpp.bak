@@ -1,3 +1,16 @@
+/*
+ Most the objects of this program (world View, player, computerAI, messages) 
+    Are managed by their own re-entrant HANDLER function
+        The methods of the handler are controlled by COMMANDS which are identified through enum'd constants.
+        The properties of the object reside in an Object STRUCT.
+            This allows for the objects to potentially have multiple instances which each hold unique structs and therefore unique properties.
+        The dependent objects of the object might also have structs of their own embedded inside the parent Object Struct, 
+            like the ship properties of ships that belong to a player will have data Structs of their own, inside the player struct.
+            (actually I handled the ships a little different, and their commands are embedded into their name, because the function arguments needed more flexibility)
+    
+*/
+
+
 
 #include <conio.h>
 #include <cstring>
@@ -12,16 +25,15 @@
 
 using namespace std;
 
-enum TILE  		 { NOTHING=0,CARRIER,     BATTLESHIP,     CRUISER,     SUBMARINE,     DESTROYER,     WATER,
-                             CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_MISS,
-                             WATER_HIT, TRY_AGAIN
-				 };				
+enum TILE        { NOTHING=0,CARRIER,     BATTLESHIP,     CRUISER,     SUBMARINE,     DESTROYER,     WATER,
+                            CARRIER_HIT, BATTLESHIP_HIT, CRUISER_HIT, SUBMARINE_HIT, DESTROYER_HIT, WATER_MISS,
+                            WATER_HIT, TRY_AGAIN };				
 enum STATE       { IDLE=0, WAITING, STARTING, CLOSING, QUITTING, EXPLODING, HIT, MISS,DESTROYED,NORTH,SOUTH,EAST,WEST};
 enum COMMAND     { INIT=0, SERVICE, RESET, END, RESTART, FIRE, QUIT, POSITION, SHOW , MAINLOOP, TERMINATE, ADD, CHECK_TARGET};
 enum ORIENTATION { HORIZONTAL=0, VERTICAL };
-enum DIFF		 { EASY=0, MEDIUM, HARD, STUPID };
-enum COLORS		 {BLACK=0,RED,GREEN,YELLOW,BLUE,CYAN,MAGENTA,WHITE};
-enum SEEKMODE	 {SEARCH=0,DESTROY};
+enum DIFF        { EASY=0, MEDIUM, HARD, STUPID };
+enum COLORS      {BLACK=0,RED,GREEN,YELLOW,BLUE,CYAN,MAGENTA,WHITE};
+enum SEEKMODE    {SEARCH=0,DESTROY};
 
 typedef struct {
     STATE       state;
@@ -70,6 +82,7 @@ bool            worldHandler(COMMAND cmd, WORLD *world);
 int             playerHandler(COMMAND cmd, PLAYER *player);
 void            cursesHandler(COMMAND cmd);
 int             messageHandler(COMMAND cmd, string message);
+int             computerAIHandler(COMMAND cmd, PLAYER *computer);
 
 void            ship_INIT(SHIP * shipObj, TILE tileType);
 void            ship_SET_RANDOM_POSITION(SHIP * shipObj);
@@ -179,9 +192,10 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 				world->difficulty=MEDIUM;
 				world->round=1;
 				
-				playerHandler(INIT, player); //set up the player world
-				playerHandler(INIT, computer); //set up the Computer AI Player world
+				playerHandler(INIT, player);                //set up the player world				
+                computerAIHandler(INIT , computer);         //set up the world view of the computer AI
 				messageHandler(INIT, " "); 
+                
 						
 			break;
 			
@@ -197,11 +211,53 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 			break;
 			
 			case SERVICE:  // services all events for the main world 
-				
-				//move (5,5);
-				//printw("A KEY event was fired [%c]",world->key);
-				//refresh();
+								
 				playerHandler(SERVICE, player);
+                
+                computerAIHandler(SERVICE, computer);
+                
+                            if(computer->lost > 4){																
+								//                  [------------ MESSAGES ------------] 
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"           PLAYER WINS!!!  ");
+								messageHandler(ADD,"            BATTLE SHIPS ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");								
+					
+								messageHandler(ADD,"        [TAB] to restart ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"            Well Done! ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								
+							}
+                            
+							if(player->lost > 4){
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"           COMPUTER WINS!!!  ");
+								messageHandler(ADD,"             BATTLE SHIPS ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");								
+					
+								messageHandler(ADD,"        [TAB] to restart ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"            Try Again ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+								messageHandler(ADD,"     ");
+							}
+					
 
 			break;
 			case TERMINATE:
@@ -210,9 +266,9 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 				playerHandler(TERMINATE, player); 
 			break;
 			case SHOW:       //the world
-				int targetY;
-				int targetX;
-				chtype c;
+				int         targetY;
+				int         targetX;
+				chtype      c;
 				
 				
 												//Initialize the viewBuffer
@@ -273,91 +329,70 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 		return 0;
 	}
 
+    // *******************************************************
+	int computerAIHandler(COMMAND cmd, PLAYER *computer){
 	// *******************************************************
-	int playerHandler(COMMAND cmd, PLAYER *player){
-	// *******************************************************
-		//enum COMMAND     { INIT, RESET, END, RESTART, FIRE, QUIT };
-		WORLD * world		= &worldObj;						
-		PLAYER * computer	= &computerObj;		
-		TARGET * target;
-
-		int targetY = (int) (player->attackVectorY & 0x7f) - 0x61;
+        WORLD   *   world		= &worldObj;								
+		PLAYER  *   player 	    = &playerObj;		
+		TARGET  *   target;
+        TILE        result;
+		int         numTargets;				
+		int         targetType;
+        
+        int targetY = (int) (player->attackVectorY & 0x7f) - 0x61;
 		int targetX = (int) (player->attackVectorX & 0x7f) - 0x30;		
-		int row,col,trys;
-								
-				
-		switch (cmd){
-			default:
-			break;
-			
-			case SERVICE:			
-				TILE result;
-				int numTargets;
-				
-				switch(world->key){
-					case (char) KEY_LEFT:
-						if(targetX>0){
-							player->attackVectorX-=1;
-						}
-					break;
-					case (char) KEY_RIGHT:
-						if(targetX<9){
-							player->attackVectorX+=1;
-						}
-					break;
-					case (char) KEY_UP:
-						if(targetY>0){
-							player->attackVectorY-=1;
-						}
-					break;
-					case (char) KEY_DOWN:
-						if(targetY<9){
-							player->attackVectorY+=1;
-						}
-					break;
-					case (char) 0x0d:
-							int targetType;
-							//TAKE A SHOT AT THE ENEMY
-							sprintf(tmpBuffer,"Player Shoots at [%c, %c]",player->attackVectorX,player->attackVectorY);
-							messageHandler(ADD,tmpBuffer);
-							
-							//COLLISION CHECK AND REPORT
-							//result=(TILE) playerHandler(CHECK_TARGET,player);
-							result =(TILE) target_CHECK_TARGET(target, player, NOTHING);
-							
-							if(result==TRY_AGAIN){
-								sprintf(tmpBuffer,"Shoot Again, already targetted");
-								messageHandler(ADD,tmpBuffer);
-								return 0;
-							}
-							if((int)result>0 and (int)result<6){
-								sprintf(tmpBuffer,"Player hits %s",tileTypes[(int)result].c_str());
-								messageHandler(ADD,tmpBuffer);
-								if(ship_TAKE_HIT(&computer->ships[(TILE)result])==0){
-									sprintf(tmpBuffer,"PLAYER DESTROYS %s",tileTypes[(int)result].c_str());
-									messageHandler(ADD,tmpBuffer);
-									computer->lost++;									
-								}
-							}
-							
-							if(result==WATER){
-								sprintf(tmpBuffer,"Player Misses");
-								messageHandler(ADD,tmpBuffer);
-							}
-							
-							//THEN TAKE A HIT FROM THE ENEMY
-							numTargets=0;
+		
+        
+        switch(cmd){
+            default:
+            break;
+            case INIT:
+                                                            //The computer AI is also a player, so it has all the same structures and views as a human player.
+                playerHandler(INIT, computer);              //set up the Computer AI Player world
+                                                    
+            break;
+            case SERVICE:
+                            //only called when a keystroke has happened, the human player gets first dibs at the keystrokes
+                            //and the computer then responds to the players actions.
+                            
+                            //nothing to do...
+                            //except maybe talk smack once every (100/4) keystrokes.
+                          
+                          /*
+                          if(rand() % 200 == 1){
+                                messageHandler(ADD,"Comp,'OMG you are so bad at this'");
+                            }
+                            if(rand() % 200 == 2){
+                                messageHandler(ADD,"Comp,'really, find another game'");
+                            }
+                            if(rand() % 200 == 3){
+                                messageHandler(ADD,"Comp,'Im posting this on facebook'");
+                            }
+                            if(rand() % 200 == 4){
+                                messageHandler(ADD,"Comp,'Are you even trying?'");
+                            }                          
+                            */
+            break;
+            case FIRE:      //Handles the AI's decision making when taking a shot.    
+                            //see description.txt for the logic behind what it does.
+                            bool  debug = false;
+                            int trys;
+                            int steps;
+                    		numTargets=0;
 							result=TRY_AGAIN;
-							
+							trys=0;
+                            
 							//FIRST CHECK TO SEE IF THE COMPUTER HAS ANY TARGETS
 							for(targetType = (int) CARRIER; targetType < (int) WATER; targetType++){							
-								int  steps=0;
+								steps=0;
+                                
 								target = &computer->targets[(int)targetType];
 								target->changeDirection=false;								
 								
-								if(target->state!=IDLE){ //NORTH,SOUTH,EAST,WEST,HIT is our targetting direction
+								if(target->state!=IDLE){                                //NORTH,SOUTH,EAST,WEST,HIT is our targetting direction
 									numTargets = (int) targetType;						//records a flag of the targetType we are targetting
 									//we are hunting this ship
+                                    
 									while(result==TRY_AGAIN ){
 										sprintf(tmpBuffer,"TARGET %s %s",tileTypes[(int)targetType].c_str(),stateTypes[(int)target->state].c_str());
 										messageHandler(ADD,tmpBuffer);
@@ -366,88 +401,146 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 										steps=0;												
 										switch(target->state){
 											case NORTH:												
-												while(result==TRY_AGAIN && target->changeDirection==false){
+												while(result==TRY_AGAIN && target->changeDirection==false ){
 												
 													computer->attackVectorX = attackXCoordinates[target->targetVectorX];
-													if(target->targetVectorY-steps > 0 && steps<partLengths[(int)targetType]){
+													if(target->targetVectorY-steps > -1 && steps<partLengths[(int)targetType]){
 														computer->attackVectorY = attackYCoordinates[target->targetVectorY-steps];														
 														
 														result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
-								
+                                                        
+                                                        if(result == TRY_AGAIN && debug){
+                                                            sprintf(tmpBuffer,"TRY AGAIN [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}else{													
 														//because out of bounds we need to redirect the search direction
 														target->changeDirection=target_CHANGE_DIRECTION(target);														
+                                                        if(debug){
+                                                            sprintf(tmpBuffer,"out of bounds [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}
 													steps++;
+                                                    if(trys++ > 99){
+                                                        break;
+                                                    }
 												}
 											break;
 											case EAST:												
-												while(result==TRY_AGAIN && target->changeDirection==false){
+												while(result==TRY_AGAIN && target->changeDirection==false ){
 											
 													computer->attackVectorY = attackYCoordinates[target->targetVectorY];
-													if(target->targetVectorX-steps >0 && steps<partLengths[(int)targetType]){
+													if(target->targetVectorX-steps >-1 && steps<partLengths[(int)targetType]){
 														computer->attackVectorX = attackXCoordinates[target->targetVectorX-steps];														
 														
 														result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);													    
+                                                        if(result == TRY_AGAIN && debug){
+                                                            sprintf(tmpBuffer,"TRY AGAIN [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}else{
 														//because out of bounds we need to redirect the search direction
 														target->changeDirection=target_CHANGE_DIRECTION(target);
+                                                        if(debug){
+                                                            sprintf(tmpBuffer,"out of bounds [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}
 													steps++;
+                                                    if(trys++ > 99){
+                                                        break;
+                                                    }
 												}										
 											break;
 											case SOUTH:																							
-												while(result==TRY_AGAIN && target->changeDirection==false){
+												while(result==TRY_AGAIN && target->changeDirection==false ){
 												
 													computer->attackVectorX = attackXCoordinates[target->targetVectorX];
 													if(target->targetVectorY+steps <10 && steps<partLengths[(int)targetType]){
 														computer->attackVectorY = attackYCoordinates[target->targetVectorY+steps];														
 														
 														result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
+                                                        if(result == TRY_AGAIN && debug){
+                                                            sprintf(tmpBuffer,"TRY AGAIN [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													    
 													}else{
 														//because out of bounds we need to redirect the search direction
 														target->changeDirection=target_CHANGE_DIRECTION(target);
+                                                        if(debug){
+                                                            sprintf(tmpBuffer,"out of bounds [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}
 													steps++;
+                                                    if(trys++ > 99){
+                                                        break;
+                                                    }
 												}
 											break;
 											case WEST:												
-												while(result==TRY_AGAIN && target->changeDirection==false){
+												while(result==TRY_AGAIN && target->changeDirection==false ){
 												
 													computer->attackVectorY = attackYCoordinates[target->targetVectorY];
 													if(target->targetVectorX+steps <10 && steps<partLengths[(int)targetType]){
 														computer->attackVectorX = attackXCoordinates[target->targetVectorX+steps];
 														
 													    result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
+                                                        if(result == TRY_AGAIN && debug){
+                                                            sprintf(tmpBuffer,"TRY AGAIN [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}else{
 														//because out of bounds we need to redirect the search direction
 														target->changeDirection=target_CHANGE_DIRECTION(target);
+                                                        if(debug){
+                                                            sprintf(tmpBuffer,"out of bounds [%c, %c][%d %d]  %d",computer->attackVectorX,computer->attackVectorY,target->targetVectorX,target->targetVectorY,steps);
+                                                            messageHandler(ADD,tmpBuffer);
+                                                        }
 													}
 													steps++;
+                                                    if(trys++ > 99){
+                                                        break;
+                                                    }
 												}
 											break;								
 										}
+                                        if(trys++ > 99){
+                                            break;
+                                        }
 										if(target->changeDirection){
 										//we have a direction change request .. soo then what?
 										// if result also == try_again ...
 										}
 									}//while TRY AGAIN									
 								}//if target idle
-								if(result!=TRY_AGAIN){
-									break;
+								if(result!=TRY_AGAIN || trys > 99){
+                                    if (trys > 99){
+                                        messageHandler(ADD,"ERROR Failed 100 trys to target");
+                                        return 1;
+                                    }
+                                    break;
 								}								
 							}
 							
+                                                 
 							if(numTargets==0){ // there are no targets so go into search mode.
 								result	=TRY_AGAIN;
 								targetType=(int) NOTHING;
-								while(result==TRY_AGAIN){
+                                trys=0;
+								while(result==TRY_AGAIN ){
 									computer->attackVectorX = attackXCoordinates[rand() % 10];
 									computer->attackVectorY = attackYCoordinates[rand() % 10];														
 									
 									result =(TILE) target_CHECK_TARGET(target, computer, (TILE) targetType);
-								}
+                                    if (trys++ > 99){
+                                        messageHandler(ADD,"ERROR Failed 100 trys to search");
+                                        return 1;
+                                    }
+                                }
+                                
 							}
 							sprintf(tmpBuffer,"Computer Fires at [%c, %c]",computer->attackVectorX,computer->attackVectorY);
 							messageHandler(ADD,tmpBuffer);
@@ -498,57 +591,67 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 								sprintf(tmpBuffer,"Computer Misses");
 								messageHandler(ADD,tmpBuffer);
 							}
+            break;
+        
+        }
+		
+        return 0;
+
+    }
+    
+	// *******************************************************
+	int playerHandler(COMMAND cmd, PLAYER *player){
+	// *******************************************************
+		//enum COMMAND     { INIT, RESET, END, RESTART, FIRE, QUIT };
+		WORLD * world		= &worldObj;						
+		PLAYER * computer	= &computerObj;		
+		TARGET * target;
+
+		int targetY = (int) (player->attackVectorY & 0x7f) - 0x61;
+		int targetX = (int) (player->attackVectorX & 0x7f) - 0x30;		
+		int row,col,trys;
+		TILE result;
+		int numTargets;				
+				
+		switch (cmd){
+			default:
+			break;
+			
+			case SERVICE:			
+				
+				
+				switch(world->key){
+					case (char) KEY_LEFT:
+						if(targetX>0){
+							player->attackVectorX-=1;
+						}
+					break;
+					case (char) KEY_RIGHT:
+						if(targetX<9){
+							player->attackVectorX+=1;
+						}
+					break;
+					case (char) KEY_UP:
+						if(targetY>0){
+							player->attackVectorY-=1;
+						}
+					break;
+					case (char) KEY_DOWN:
+						if(targetY<9){
+							player->attackVectorY+=1;
+						}
+					break;
+					case (char) 0x0d:
+							//TAKE A SHOT AT THE ENEMY
+							if(playerHandler(FIRE, player)){  // if return 1 then there was a failed attempt at a shot and we need to try again
+                                return 1;
+                            }
+                            
+							//Successful attack so TAKE A HIT FROM THE ENEMY
+                            computerAIHandler(FIRE, computer);
+                    		
+							world->round++;							
 							
-							if(computer->lost>4){
-								//sprintf(tmpBuffer,"Player WINS! ");
-								//messageHandler(ADD,tmpBuffer);		
-										
-								//sprintf(tmpBuffer,"GAME OVER ");
-								//messageHandler(ADD,tmpBuffer);
-								
-								//                  [------------ MESSAGES ------------] 
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"           PLAYER WINS!!!  ");
-								messageHandler(ADD,"            BATTLE SHIPS ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");								
-					
-								messageHandler(ADD,"        [TAB] to restart ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"            Well Done! ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								
-							}
-							if(player->lost>4){
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"           COMPUTER WINS!!!  ");
-								messageHandler(ADD,"             BATTLE SHIPS ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");								
-					
-								messageHandler(ADD,"        [TAB] to restart ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"            Try Again ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-								messageHandler(ADD,"     ");
-							}
-							
-							world->round++;
-							
-							//COLLISION CHECK AND REPORT							
 					break;
 					
 					case 'a':
@@ -588,12 +691,39 @@ char            tmpBuffer[256];			//temp buffer for constructing display element
 				}				
 			
 			break;
-			
-			case INIT:	//constructor
-				//STATE 		state; 	
-				//SHIP 		ships[6]; 				
-				//TILE		playerGameSpace[10][10]; 
-				//TILE		enemyGameSpace[10][10];  
+			case FIRE:
+                            int targetType;
+							
+                            sprintf(tmpBuffer,"Player Shoots at [%c, %c]",player->attackVectorX,player->attackVectorY);
+							messageHandler(ADD,tmpBuffer);
+							
+							//COLLISION CHECK AND REPORT
+							//result=(TILE) playerHandler(CHECK_TARGET,player);
+							result =(TILE) target_CHECK_TARGET(target, player, NOTHING);
+							
+							if(result==TRY_AGAIN){
+								sprintf(tmpBuffer,"Shoot Again, already targetted");
+								messageHandler(ADD,tmpBuffer);
+								return 1;
+							}
+							if((int)result>0 and (int)result<6){
+								sprintf(tmpBuffer,"Player hits %s",tileTypes[(int)result].c_str());
+								messageHandler(ADD,tmpBuffer);
+								if(ship_TAKE_HIT(&computer->ships[(TILE)result])==0){
+									sprintf(tmpBuffer,"PLAYER DESTROYS %s",tileTypes[(int)result].c_str());
+									messageHandler(ADD,tmpBuffer);
+									computer->lost++;									
+								}
+							}
+							
+							if(result==WATER){
+								sprintf(tmpBuffer,"Player Misses");
+								messageHandler(ADD,tmpBuffer);
+							}
+					
+            break;
+            
+			case INIT:	//constructor				
 				
 				player->state=IDLE;
 				player->attackVectorX='0';			
